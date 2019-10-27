@@ -1,4 +1,6 @@
 # Multicontents
+[![Build Status](https://travis-ci.org/lydian/multicontents.svg?branch=master)](https://travis-ci.org/lydian/multicontents)
+[![codecov](https://codecov.io/gh/lydian/multicontents/branch/master/graph/badge.svg)](https://codecov.io/gh/lydian/multicontents)
 
 - Allow setting up multiple sources on jupyter
 - Support moving data accross different sources
