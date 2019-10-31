@@ -2,10 +2,18 @@
 [![Build Status](https://travis-ci.org/lydian/multicontents.svg?branch=master)](https://travis-ci.org/lydian/multicontents)
 [![codecov](https://codecov.io/gh/lydian/multicontents/branch/master/graph/badge.svg)](https://codecov.io/gh/lydian/multicontents)
 
-- Allow setting up multiple sources on jupyter
+It's intentionally to do things like HybridContentsManager (from pgcontents) which allow setting up multiple sources on jupyter.
+With extra features including:
 - Support moving data accross different sources
+- The package is pretty lightweight, which means you don't need to install extra library if you only want the multi backend support.
 
-## Example
+
+## Install
+1. install multicontents
+```
+pip install multicontents
+```
+2. configure jupyter_notebook_config.py
 ```
 from multicontents import MultiContentsManager
 from IPython.html.services.contents.filemanager import FileContentsManager
@@ -28,4 +36,13 @@ c.MultiContentsManager.managers = {
     },
 }
 ```
+
+## Develoop
+1. clone the repo:
+```git clone git@github.com:lydian/multicontents.git```
+2. run testing with ```make server```
+3. You can modify example config file for testing
+
+I'll try my best to do CR pull request!
+
 

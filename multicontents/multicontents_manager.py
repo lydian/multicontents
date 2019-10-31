@@ -164,6 +164,13 @@ class MultiContentsManager(ContentsManager):
         old_manager = self.get_manager(old_path)
         new_manager = self.get_manager(new_path)
 
+        # avoid renaming on virtual folder
+        if (
+            old_manager.to_actual_path(old_path) == ""
+            or new_manager.to_actual_path(new_path) == ""
+        ):
+            raise HTTPError(400, reason="You cannot rename the virtual directory")
+
         if old_manager == new_manager:
             old_manager.rename_file(old_path, new_path)
         else:

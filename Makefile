@@ -1,5 +1,5 @@
 .PHONY: test clean develop-server
-export JUPYTER_CONFIG_DIR := $(PWD)/.jupyter
+export JUPYTER_CONFIG_DIR := $(PWD)/example
 
 virtualenv_run:
 	tox -e virtualenv_run
@@ -7,8 +7,12 @@ virtualenv_run:
 test:
 	tox
 
-develop-server: virtualenv_run
-	JUPYTER_CONFIG_DIR=example/ virtualenv_run/bin/jupyter lab --ip $(shell hostname -f)  -y --no-browser
+server: virtualenv_run
+	 virtualenv_run/bin/jupyter lab -y \
+	 	 --no-browser \
+	 	 --ip 0.0.0.0 \
+	 	 --NotebookApp.token='' \
+	 	 --NotebookApp.password=''
 
 build:
 	tox -e build
