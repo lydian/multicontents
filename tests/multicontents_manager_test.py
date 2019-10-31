@@ -1,5 +1,6 @@
 import mock
 import pytest
+from tornado.web import HTTPError
 
 from multicontents.multicontents_manager import MultiContentsManager
 from multicontents.multicontents_manager import WrapperManager
@@ -227,6 +228,15 @@ class TestMultiContentsManager(object):
         manager_with_root._managers[0].rename_file.assert_called_once_with(
             "child/test1", "child/test2"
         )
+
+    @pytest.mark.parametrize(
+        "old_path,new_path", [("/foo", "something/new"), ("something", "/foo")]
+    )
+    def test_rename_file_virtual_direcotry(
+        self, manager_without_root, old_path, new_path
+    ):
+        with pytest.raises(HTTPError):
+            manager_without_root.rename_file(old_path, new_path)
 
     def test_rename_file_different_manager(self, manager_with_root):
         manager_with_root._managers[0].get = mock.Mock()
