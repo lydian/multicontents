@@ -10,7 +10,7 @@ with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), "README.md"))
 
 setup(
     name="multicontents",
-    version="0.1.1",
+    version="0.1.2",
     description="providing contents from multiple sources in jupyter notebook",
     long_description_content_type="text/markdown",
     long_description=long_description,
