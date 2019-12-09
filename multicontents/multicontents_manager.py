@@ -7,7 +7,7 @@ from notebook.services.contents.manager import ContentsManager
 from tornado.web import HTTPError
 from traitlets import Dict
 
-from multicontents.no_op_checkpoints import NoOpCheckpoints
+from multicontents.multi_versions_file_checkpoints import MultiVersionsFileCheckpoints
 
 DUMMY_CREATED_DATE = datetime.datetime.fromtimestamp(86400)
 
@@ -71,6 +71,8 @@ class WrapperManager(object):
 
     def get(self, path, *args, **kwargs):
         result = self.manager.get(self.to_actual_path(path), *args, **kwargs)
+        if result.get("path", None):
+            result["path"] = self.to_proxy_path(result["path"])
         if result.get("content", None) and self.dir_exists(path):
             result["content"] = [
                 dict(
@@ -137,7 +139,7 @@ class MultiContentsManager(ContentsManager):
         except HTTPError as e:
             # if root is not configured, we build a virtual directory to list all
             # the defined path
-            if path == "/":
+            if path == "/" or path == "":  # jupyterlab use "/", but classic use ""
                 current = build_base_model(
                     type_="directory",
                     path="/",
@@ -188,10 +190,14 @@ class MultiContentsManager(ContentsManager):
         return self.get_manager(path).file_exists(path)
 
     def dir_exists(self, path):
+        if path == "":
+            return True
         return self.get_manager(path).dir_exists(path)
 
     def is_hidden(self, path):
+        if path == "":
+            return False
         return self.get_manager(path).is_hidden(path)
 
     def _checkpoints_class_default(self):
-        return NoOpCheckpoints
+        return MultiVersionsFileCheckpoints

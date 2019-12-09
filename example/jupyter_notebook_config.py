@@ -22,3 +22,4 @@ c.MultiContentsManager.managers = {
 
 c.NotebookApp.token = ""
 c.NotebookApp.password = ""
+c.MultiVersionsFileCheckpoints.root_dir = os.environ["HOME"]

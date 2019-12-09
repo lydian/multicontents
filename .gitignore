@@ -6,3 +6,4 @@ virtualenv_run/
 .coverage
 example/
 dist/
+.jupyter/
