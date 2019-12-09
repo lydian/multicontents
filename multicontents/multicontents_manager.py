@@ -178,6 +178,12 @@ class MultiContentsManager(ContentsManager):
         else:
             model = old_manager.get(old_path)
             new_manager.save(model, new_path)
+            if self.dir_exists(old_path):
+                for model in self.get(old_path)["content"]:
+                    self.rename_file(
+                        os.path.join(old_path, model["name"]),
+                        os.path.join(new_path, model["name"]),
+                    )
             old_manager.delete_file(old_path)
 
     def save(self, model, path):

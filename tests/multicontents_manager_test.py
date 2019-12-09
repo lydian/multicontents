@@ -238,15 +238,67 @@ class TestMultiContentsManager(object):
         with pytest.raises(HTTPError):
             manager_without_root.rename_file(old_path, new_path)
 
-    def test_rename_file_different_manager(self, manager_with_root):
+    def test_rename_file_different_manager_file(self, manager_with_root):
         manager_with_root._managers[0].get = mock.Mock()
         manager_with_root._managers[0].delete_file = mock.Mock()
         manager_with_root._managers[1].save = mock.Mock()
-        manager_with_root.rename_file("child/test1", "test2")
+        with mock.patch.object(manager_with_root, "dir_exists", return_value=False):
+            manager_with_root.rename_file("child/test1", "test2")
         manager_with_root._managers[0].get.assert_called_once_with("child/test1")
         manager_with_root._managers[1].save.assert_called_once_with(
             manager_with_root._managers[0].get.return_value, "test2"
         )
         manager_with_root._managers[0].delete_file.assert_called_once_with(
             "child/test1"
+        )
+
+    def get_fake_item(self, path):
+        items = {"folder_1": {"file_2": None, "folder_3": {"file_4": None}}}
+        obj = items
+        for key in path.strip("/").split("/"):
+            obj = obj[key]
+        return obj
+
+    @pytest.fixture
+    def mock_dir_exists(self, manager_with_root):
+        def dir_exists(path):
+            return self.get_fake_item(path) is not None
+
+        with mock.patch.object(manager_with_root, "dir_exists", side_effect=dir_exists):
+            yield
+
+    @pytest.fixture
+    def mock_get(self, manager_with_root):
+        def get(path):
+            obj = self.get_fake_item(path)
+            content = [{"name": key} for key in obj] if obj is not None else ""
+            return {"name": path.rsplit("/", 1)[-1], "path": path, "content": content}
+
+        with mock.patch.object(manager_with_root, "get", side_effect=get):
+            manager_with_root._managers[1].get = mock.Mock(side_effect=get)
+            yield
+
+    def test_rename_file_different_manager_dir(
+        self, manager_with_root, mock_dir_exists, mock_get
+    ):
+        manager_with_root._managers[1].delete_file = mock.Mock()
+        manager_with_root._managers[0].save = mock.Mock()
+
+        manager_with_root.rename_file("folder_1", "child/test_2")
+
+        old_files = [
+            "folder_1",
+            "folder_1/file_2",
+            "folder_1/folder_3",
+            "folder_1/folder_3/file_4",
+        ]
+        manager_with_root._managers[1].get.assert_has_calls(
+            mock.call(f) for f in old_files
+        )
+        manager_with_root._managers[0].save.assert_has_calls(
+            mock.call(mock.ANY, f.replace("folder_1", "child/test_2"))
+            for f in old_files
+        )
+        manager_with_root._managers[1].delete_file.assert_has_calls(
+            [mock.call(f) for f in old_files], any_order=True
         )
