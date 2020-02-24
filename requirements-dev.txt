@@ -5,7 +5,7 @@ prometheus-client==0.7.1
 pickleshare==0.7.5
 mock==3.0.5
 decorator==4.4.1
-bleach==3.1.0
+bleach==3.1.1
 identify==1.4.7
 pandocfilters==1.4.2
 pre-commit==1.19.0
