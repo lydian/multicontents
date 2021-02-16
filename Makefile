@@ -13,7 +13,8 @@ server: virtualenv_run
 	 	 --ip 0.0.0.0 \
 	 	 --debug \
 	 	 --NotebookApp.token='' \
-	 	 --NotebookApp.password=''
+	 	 --NotebookApp.password='' \
+	 	 --config example/jupyter_notebook_config.py
 
 build:
 	tox -e build

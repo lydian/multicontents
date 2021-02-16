@@ -2,7 +2,12 @@ import os
 import datetime
 
 from jupyter_core.utils import ensure_dir_exists
-from notebook.services.contents.filecheckpoints import GenericFileCheckpoints
+
+
+try:
+    from jupyter_server.services.contents.filecheckpoints import GenericFileCheckpoints
+except ImportError:
+    from notebook.services.contents.filecheckpoints import GenericFileCheckpoints
 
 
 class MultiVersionsFileCheckpoints(GenericFileCheckpoints):

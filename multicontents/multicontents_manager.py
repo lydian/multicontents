@@ -3,11 +3,16 @@ import re
 import datetime
 import importlib
 
-from notebook.services.contents.manager import ContentsManager
 from tornado.web import HTTPError
 from traitlets import Dict
 
 from multicontents.multi_versions_file_checkpoints import MultiVersionsFileCheckpoints
+
+try:
+    from jupyter_server.services.contents.manager import ContentsManager
+except ImportError:
+    from notebook.services.contents.manager import ContentsManager
+
 
 DUMMY_CREATED_DATE = datetime.datetime.fromtimestamp(86400)
 

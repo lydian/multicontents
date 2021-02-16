@@ -1,3 +1,6 @@
+v0.3.0
+- Support for newer version of `jupyter-server`
+
 v0.2.0
 - Add MultiVersionsCheckpoints (the GenericFileCheckpoints only allow you store single version)
 - Set the default of MulitContentsManager to use MultiVersionsCheckpoints
