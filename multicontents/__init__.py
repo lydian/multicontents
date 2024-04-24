@@ -1,3 +1,6 @@
 # flake8: noqa
-import notebook.transutils
+try:
+    import notebook.transutils
+except ImportError:
+    import jupyter_server.transutils
 from multicontents.multicontents_manager import MultiContentsManager
