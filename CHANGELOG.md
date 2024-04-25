@@ -1,3 +1,6 @@
+v0.4.0
+- Try import `transutils` from either `jupyter-server` (newer version) or `notebook` (old version)
+
 v0.3.0
 - Support for newer version of `jupyter-server`
 
