@@ -2,8 +2,12 @@
 multicontents.egg-info/
 virtualenv_run/
 .tox/
+.venv/
 *.pyc
+__pycache__/
 .coverage
+.pytest_cache/
 example/
 dist/
+build/
 .jupyter/

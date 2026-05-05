@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "multicontents"
+version = "0.5.0"
+description = "providing contents from multiple sources in jupyter notebook"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+license-files = ["LICENSE.txt"]
+authors = [{ name = "Lydian Lee", email = "lydianly@gmail.com" }]
+maintainers = [{ name = "Lydian Lee", email = "lydianly@gmail.com" }]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Web Environment",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+]
+dependencies = [
+    "jupyter_server",
+    "ipykernel",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ipdb",
+    "jupyter",
+    "jupyterlab",
+    "mock",
+    "pre-commit>=1.0.0",
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "requests",
+]
+
+[project.urls]
+Homepage = "https://github.com/lydian/multicontents"
+Repository = "https://github.com/lydian/multicontents"
+
+[tool.setuptools.packages.find]
+include = ["multicontents*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
