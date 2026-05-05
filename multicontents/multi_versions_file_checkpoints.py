@@ -2,15 +2,10 @@ import os
 import datetime
 
 from jupyter_core.utils import ensure_dir_exists
+from jupyter_server.services.contents.filecheckpoints import AsyncGenericFileCheckpoints
 
 
-try:
-    from jupyter_server.services.contents.filecheckpoints import GenericFileCheckpoints
-except ImportError:
-    from notebook.services.contents.filecheckpoints import GenericFileCheckpoints
-
-
-class MultiVersionsFileCheckpoints(GenericFileCheckpoints):
+class AsyncMultiVersionsFileCheckpoints(AsyncGenericFileCheckpoints):
     def checkpoint_path(self, checkpoint_id, path):
         """find the path to a checkpoint"""
         checkpoint_dir = self.get_checkpoints_path_for_file(path)
@@ -38,35 +33,35 @@ class MultiVersionsFileCheckpoints(GenericFileCheckpoints):
         checkpoint_id = str(saved_time.timestamp()).replace(".", "")
         return checkpoint_dir, checkpoint_id
 
-    def create_file_checkpoint(self, content, format, path):
+    async def create_file_checkpoint(self, content, format, path):
         checkpoint_dir, checkpoint_id = self.get_checkpoint_dir_and_id(
             path, create_missing=True
         )
         checkpoint_file_path = os.path.join(checkpoint_dir, checkpoint_id)
         self.log.debug("creating checkpoint for %s", path)
         with self.perm_to_403():
-            self._save_file(checkpoint_file_path, content, format=format)
-        return self.checkpoint_model(checkpoint_id, checkpoint_file_path)
+            await self._save_file(checkpoint_file_path, content, format=format)
+        return await self.checkpoint_model(checkpoint_id, checkpoint_file_path)
 
-    def create_notebook_checkpoint(self, nb, path):
+    async def create_notebook_checkpoint(self, nb, path):
         checkpoint_dir, checkpoint_id = self.get_checkpoint_dir_and_id(
             path, create_missing=True
         )
         checkpoint_file_path = os.path.join(checkpoint_dir, checkpoint_id)
         self.log.debug("creating checkpoint for %s", path)
         with self.perm_to_403():
-            self._save_notebook(checkpoint_file_path, nb)
-        return self.checkpoint_model(checkpoint_id, checkpoint_file_path)
+            await self._save_notebook(checkpoint_file_path, nb)
+        return await self.checkpoint_model(checkpoint_id, checkpoint_file_path)
 
-    def list_checkpoints(self, path):
+    async def list_checkpoints(self, path):
         checkpoint_dir = self.get_checkpoints_path_for_file(path)
         if not os.path.isdir(checkpoint_dir):
             return []
-        checkpoints = [
-            self.checkpoint_model(
+        checkpoints = []
+        for file_name in os.listdir(checkpoint_dir):
+            checkpoint = await self.checkpoint_model(
                 file_name,
                 os.path.join(self.get_checkpoints_path_for_file(path), file_name),
             )
-            for file_name in os.listdir(checkpoint_dir)
-        ]
+            checkpoints.append(checkpoint)
         return sorted(checkpoints, key=lambda c: -c["last_modified"].timestamp())

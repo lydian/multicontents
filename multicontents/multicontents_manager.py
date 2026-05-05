@@ -3,16 +3,14 @@ import re
 import datetime
 import importlib
 
+from jupyter_core.utils import ensure_async
 from tornado.web import HTTPError
 from traitlets import Dict
 
-from multicontents.multi_versions_file_checkpoints import MultiVersionsFileCheckpoints
-
-try:
-    from jupyter_server.services.contents.manager import ContentsManager
-except ImportError:
-    from notebook.services.contents.manager import ContentsManager
-
+from jupyter_server.services.contents.manager import AsyncContentsManager
+from multicontents.multi_versions_file_checkpoints import (
+    AsyncMultiVersionsFileCheckpoints,
+)
 
 DUMMY_CREATED_DATE = datetime.datetime.fromtimestamp(86400)
 
@@ -74,11 +72,13 @@ class WrapperManager(object):
         actual_path = actual_path.strip("/")
         return os.path.join(self.proxy_path, actual_path).strip("/")
 
-    def get(self, path, *args, **kwargs):
-        result = self.manager.get(self.to_actual_path(path), *args, **kwargs)
+    async def get(self, path, *args, **kwargs):
+        result = await ensure_async(
+            self.manager.get(self.to_actual_path(path), *args, **kwargs)
+        )
         if result.get("path", None):
             result["path"] = self.to_proxy_path(result["path"])
-        if result.get("content", None) and self.dir_exists(path):
+        if result.get("content", None) and await self.dir_exists(path):
             result["content"] = [
                 dict(
                     list(model.items()) + [("path", self.to_proxy_path(model["path"]))]
@@ -87,28 +87,30 @@ class WrapperManager(object):
             ]
         return result
 
-    def save(self, model, path):
-        return self.manager.save(model, self.to_actual_path(path))
+    async def save(self, model, path):
+        return await ensure_async(self.manager.save(model, self.to_actual_path(path)))
 
-    def delete_file(self, path):
-        return self.manager.delete_file(self.to_actual_path(path))
+    async def delete_file(self, path):
+        return await ensure_async(self.manager.delete_file(self.to_actual_path(path)))
 
-    def file_exists(self, path=None):
-        return self.manager.file_exists(self.to_actual_path(path))
+    async def file_exists(self, path=None):
+        return await ensure_async(self.manager.file_exists(self.to_actual_path(path)))
 
-    def dir_exists(self, path):
-        return self.manager.dir_exists(self.to_actual_path(path))
+    async def dir_exists(self, path):
+        return await ensure_async(self.manager.dir_exists(self.to_actual_path(path)))
 
-    def is_hidden(self, path):
-        return self.manager.is_hidden(self.to_actual_path(path))
+    async def is_hidden(self, path):
+        return await ensure_async(self.manager.is_hidden(self.to_actual_path(path)))
 
-    def rename_file(self, old_path, new_path):
-        self.manager.rename_file(
-            self.to_actual_path(old_path), self.to_actual_path(new_path)
+    async def rename_file(self, old_path, new_path):
+        await ensure_async(
+            self.manager.rename_file(
+                self.to_actual_path(old_path), self.to_actual_path(new_path)
+            )
         )
 
 
-class MultiContentsManager(ContentsManager):
+class MultiContentsManager(AsyncContentsManager):
 
     managers = Dict(help="the path to manager_class settings").tag(config=True)
 
@@ -118,15 +120,11 @@ class MultiContentsManager(ContentsManager):
             WrapperManager(path.lstrip("/"), config["manager_class"], config["kwargs"])
             for path, config in self.managers.items()
         ]
-        # path are searched based on the depth, so that we will always match
-        # to the closest one first
         self._managers.sort(
             key=lambda manager: (
-                manager.proxy_path == "",  # non root matched first
-                -len(manager.proxy_path.split("/")),  # match deeper folder first
-                -len(
-                    manager.proxy_path.rsplit("/", 1)[-1]
-                ),  # match longest directory name first
+                manager.proxy_path == "",
+                -len(manager.proxy_path.split("/")),
+                -len(manager.proxy_path.rsplit("/", 1)[-1]),
             )
         )
 
@@ -136,15 +134,13 @@ class MultiContentsManager(ContentsManager):
                 return manager
         raise HTTPError(404, f"Manager not found for path: '{path}'")
 
-    def get(self, path, *args, **kwargs):
+    async def get(self, path, *args, **kwargs):
         try:
             manager = self.get_manager(path)
-            current = manager.get(path, *args, **kwargs)
-            is_dir = manager.dir_exists(path)
+            current = await manager.get(path, *args, **kwargs)
+            is_dir = await manager.dir_exists(path)
         except HTTPError as e:
-            # if root is not configured, we build a virtual directory to list all
-            # the defined path
-            if path == "/" or path == "":  # jupyterlab use "/", but classic use ""
+            if path == "/" or path == "":
                 current = build_base_model(
                     type_="directory",
                     path="/",
@@ -155,7 +151,6 @@ class MultiContentsManager(ContentsManager):
             else:
                 raise e
 
-        # add virtual directory
         if kwargs.get("content", None) and is_dir:
             extra = [
                 build_base_model(
@@ -167,11 +162,10 @@ class MultiContentsManager(ContentsManager):
             current["content"] += extra
         return current
 
-    def rename_file(self, old_path, new_path):
+    async def rename_file(self, old_path, new_path):
         old_manager = self.get_manager(old_path)
         new_manager = self.get_manager(new_path)
 
-        # avoid renaming on virtual folder
         if (
             old_manager.to_actual_path(old_path) == ""
             or new_manager.to_actual_path(new_path) == ""
@@ -179,36 +173,36 @@ class MultiContentsManager(ContentsManager):
             raise HTTPError(400, reason="You cannot rename the virtual directory")
 
         if old_manager == new_manager:
-            old_manager.rename_file(old_path, new_path)
+            await old_manager.rename_file(old_path, new_path)
         else:
-            model = old_manager.get(old_path)
-            new_manager.save(model, new_path)
-            if self.dir_exists(old_path):
-                for model in self.get(old_path)["content"]:
-                    self.rename_file(
+            model = await old_manager.get(old_path)
+            await new_manager.save(model, new_path)
+            if await self.dir_exists(old_path):
+                for model in (await self.get(old_path))["content"]:
+                    await self.rename_file(
                         os.path.join(old_path, model["name"]),
                         os.path.join(new_path, model["name"]),
                     )
-            old_manager.delete_file(old_path)
+            await old_manager.delete_file(old_path)
 
-    def save(self, model, path):
-        return self.get_manager(path).save(model, path)
+    async def save(self, model, path):
+        return await self.get_manager(path).save(model, path)
 
-    def delete_file(self, path):
-        return self.get_manager(path).delete_file(path)
+    async def delete_file(self, path):
+        return await self.get_manager(path).delete_file(path)
 
-    def file_exists(self, path=None):
-        return self.get_manager(path).file_exists(path)
+    async def file_exists(self, path=None):
+        return await self.get_manager(path).file_exists(path)
 
-    def dir_exists(self, path):
+    async def dir_exists(self, path):
         if path == "":
             return True
-        return self.get_manager(path).dir_exists(path)
+        return await self.get_manager(path).dir_exists(path)
 
-    def is_hidden(self, path):
+    async def is_hidden(self, path):
         if path == "":
             return False
-        return self.get_manager(path).is_hidden(path)
+        return await self.get_manager(path).is_hidden(path)
 
     def _checkpoints_class_default(self):
-        return MultiVersionsFileCheckpoints
+        return AsyncMultiVersionsFileCheckpoints

@@ -4,7 +4,6 @@ import socket
 import pytest
 import requests
 
-
 pid = None
 
 

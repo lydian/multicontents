@@ -4,7 +4,6 @@ from IPython.html.services.contents.filemanager import FileContentsManager
 
 from multicontents import MultiContentsManager
 
-
 c = get_config()  # noqa
 c.NotebookApp.nbserver_extensions = {"multicontents": True}
 
